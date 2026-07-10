@@ -6,3 +6,7 @@ __pycache__/
 venv/
 uploads/*
 !uploads/.gitkeep
+
+
+# contains API keys and secrets
+orchestrator_tester.py
