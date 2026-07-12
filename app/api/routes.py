@@ -9,6 +9,7 @@ agent_orchestrator = Orchestrator()
 def actions_parser():
     parser = reqparse.RequestParser()
     parser.add_argument("query", type=str, required=True, help="query problem (required)")
+    parser.add_argument("history", type=list, required=False, help="conversation history")
     parser.add_argument
     return parser
 
@@ -19,19 +20,18 @@ class Agent(Resource):
         current_app.logger.debug(f'/agent post')
         parser = actions_parser()
         args = parser.parse_args()
+        query = args["query"]
+        history = args["history"] or []
         current_app.logger.debug(f"/agent post args: {args}")
-        # input, content = agent_orchestrator.ask(args["query"])
-        r = agent_orchestrator.ask(args["query"])
-        # r = content[-1]
+
+        # TODO - verify that the history is being passed correctly from the client to the orchestrator
+        # r = agent_orchestrator.ask(query=query, history=history)
+        try:
+            r = agent_orchestrator.ask(query=query, history=history)
+        except Exception as e:
+            return "Error processing request", 500
         return r, 200
-        # try:
-        #     conn = db.engine.connect()
-        #     conn.close()
-        #     current_app.logger.info(f"/agent get: 200")
-        #     return'{"status": "ok"}', 200
-        # except Exception as e:
-        #     current_app.logger.error(f"/agent get: {e}")
-        #     return'{"status": "fail"}', 503
+
 
 flask_api.add_resource(Agent, '/agent') #post
 
