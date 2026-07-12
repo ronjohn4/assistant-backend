@@ -13,17 +13,17 @@ ENV UV_LINK_MODE=copy
 # Working directory
 WORKDIR /app
 
-# Copy project dependency metadata for layer cache
-COPY pyproject.toml uv.lock ./
-
-# Install python dependencies using uv
-RUN uv venv --python /usr/local/bin/python && uv sync --locked --no-dev --no-install-project
-
-# Install system packages including nginx
+# Install system packages including build essentials for compiled dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy project dependency metadata for layer cache
+COPY pyproject.toml ./
+
+# Install python dependencies using uv
+RUN uv venv --python /usr/local/bin/python && uv sync --no-dev --no-install-project
 
 # Install gunicorn and ensure operating environment uses uv venv
 RUN uv pip install gunicorn
