@@ -21,15 +21,13 @@ class Agent(Resource):
         parser = actions_parser()
         args = parser.parse_args()
         query = args["query"]
-        history = args["history"] or []
         current_app.logger.debug(f"/agent post args: {args}")
 
-        # TODO - verify that the history is being passed correctly from the client to the orchestrator
-        # r = agent_orchestrator.ask(query=query, history=history)
-        try:
-            r = agent_orchestrator.ask(query=query, history=history)
-        except Exception as e:
-            return "Error processing request", 500
+        r = agent_orchestrator.ask(query=query)
+        # try:
+        #     r = agent_orchestrator.ask(query=query)
+        # except Exception as e:
+        #     return "Error processing request", 500
         return r, 200
 
 
