@@ -3,6 +3,7 @@
 # TODO - use the system prompt
 
 from langchain.messages import HumanMessage
+from langchain_core.messages import AIMessage
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
@@ -30,6 +31,32 @@ class Output(BaseModel):
 
 class GraphState(TypedDict):
     messages: Annotated[list, add_messages]
+
+
+def _normalize_text_content(value) -> str:
+    """Convert LangChain message/content payloads into a plain string."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            text = _normalize_text_content(item)
+            if text:
+                parts.append(text)
+        return "\n".join(parts)
+    if isinstance(value, dict):
+        if "text" in value:
+            return _normalize_text_content(value["text"])
+        if "content" in value:
+            return _normalize_text_content(value["content"])
+        return str(value)
+    if hasattr(value, "text"):
+        return _normalize_text_content(getattr(value, "text"))
+    if hasattr(value, "content"):
+        return _normalize_text_content(getattr(value, "content"))
+    return str(value)
 
 
 class Orchestrator:
@@ -62,13 +89,14 @@ class Orchestrator:
 
     def _call_model(self, state: GraphState):
         response = self.model.invoke(state["messages"])
-        return {"messages": [response]}
-    
+        # print(f"response: {response}")
+        content = _normalize_text_content(response)
+        return {"messages": [AIMessage(content=content)]}
 
     def ask(self, query: str) -> str:
         config = {"configurable": {"thread_id": "conversation-session-123"}}
         input_message = HumanMessage(content=query)
         result = self.app.invoke({"messages": [input_message]}, config)
-        content = result["messages"][-1].content
+        content = _normalize_text_content(result["messages"][-1])
         return content
         
