@@ -1,11 +1,7 @@
 from langchain_core.tools import tool
 import json
-import urllib.parse
-import urllib.request
-from langchain.agents import create_agent
-from langchain_ollama import ChatOllama
-
-MODEL = "llama3.2"
+from urllib import parse, request
+from pydantic import BaseModel, Field
 
 #-------------------------------------------------------------------
 # weather tool
@@ -36,7 +32,19 @@ WEATHER_CODES = {
 }
 
 
-def _fetch_weather(city: str) -> str:
+class WeatherResult(BaseModel):
+    """Structured result for date, time, timezone, day of week."""
+    city: str = Field(description="The normalized city name"),
+    lat: float = Field(description="latitude"),
+    lon: float = Field(description="longitude"),
+    temp: float = Field(description="temperature"),
+    unit: str = Field(description="unit of measure, F or C"),
+    humidity: int = Field(description="humidity"),
+    description: str = Field(description="weather description based of the weather code"),
+
+
+@tool("get_weather_tool", description="Used to find weather related information for the given location.")
+def get_weather_tool(city: str) -> WeatherResult:
     """Fetch real weather for a city using Open-Meteo (no API key)."""
     try:
         # Geocode city name to coordinates
@@ -61,45 +69,24 @@ def _fetch_weather(city: str) -> str:
         with urllib.request.urlopen(f"{weather_url}?{weather_params}", timeout=10) as r:
             data = json.loads(r.read().decode())
         current = data.get("current", {})
-        temp = current.get("temperature_2m")
-        unit = data.get("current_units", {}).get("temperature_2m", "°C")
-        humidity = current.get("relative_humidity_2m")
         code = current.get("weather_code", 0)
-        description = WEATHER_CODES.get(code, "unknown conditions")
 
-        return (
-            f"In {name}: {description}, {temp}{unit} "
-            f"(humidity {humidity}%)."
+        result = WeatherResult(
+            city=name,
+            lat=lat,
+            lon=lon,
+            temp=current.get("temperature_2m"),
+            unit=data.get("current_units", {}).get("temperature_2m", "°C"),
+            humidity=current.get("relative_humidity_2m"),
+            description=WEATHER_CODES.get(code, "unknown conditions"),
         )
+
+        return result.model_dump_json()
+    
     except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
         return f"Could not fetch weather for '{city}': {e}."
 
 
-@tool
-def get_weather(city: str) -> str:
-    """Get the current weather for a given city (e.g. 'London', 'New York')."""
-    return _fetch_weather(city)
-
-
-#-------------------------------------------------------------------
-# Sub-agent for weather
-#-------------------------------------------------------------------
-model = ChatOllama(model=MODEL)
-
-subagent_runnable = create_agent(
-    model=model,
-    tools=[get_weather],
-    system_prompt=(
-        "You are a specialized weather agent. "
-        "Always use the get_weather tool to get accurate information. "
-        "Return the shortest possible response that answers the question—no extra "
-        "context, no preamble, just the answer."
-    )
-)
-
-
-@tool("get_weather_subagent", description="Used to find weather related information.")
-def get_weather_subagent(query: str) -> str:
-    """This sub-agent can determine the weather for a given city"""
-    result = subagent_runnable.invoke({"messages": [{"role": "user", "content": query}]})
-    return result["messages"][-1].content
+# Need to comment out the @tool() decorator if calling directly
+if __name__ == "__main__":
+   print(get_weather_tool("Parker"))

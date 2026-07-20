@@ -9,8 +9,6 @@ agent_orchestrator = Orchestrator()
 def actions_parser():
     parser = reqparse.RequestParser()
     parser.add_argument("query", type=str, required=True, help="query problem (required)")
-    parser.add_argument("history", type=list, required=False, help="conversation history")
-    parser.add_argument
     return parser
 
 
@@ -28,7 +26,7 @@ class Agent(Resource):
         #     r = agent_orchestrator.ask(query=query)
         # except Exception as e:
         #     return "Error processing request", 500
-        return r, 200
+        return r.content, 200
 
 
 flask_api.add_resource(Agent, '/agent') #post

@@ -1,12 +1,10 @@
-# TODO - get tools working with the orchestrator
 # TODO - handle deprecated langchain calls
-# TODO - use the system prompt
 
-from langchain.messages import HumanMessage
-from langchain_core.messages import AIMessage
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import BaseMessage
 
 # Robust import for ChatAnthropic across langchain versions / packages
 try:
@@ -14,69 +12,43 @@ try:
 except Exception:
     from langchain_anthropic import ChatAnthropic
 
-from pydantic import BaseModel, Field
 from typing import Annotated
 from typing_extensions import TypedDict
 
-from app.api.getdatetime import get_datetime_subagent
-from app.api.getweather import get_weather_subagent
-from app.api.generalknowledge import get_general_knowledge
+from app.api.getdatetime import get_datetime_tool
+from app.api.getweather import get_weather_tool
 from app.config import Config
 
 
-class Output(BaseModel):
-    input: str = Field(description="The original input")
-    content: str = Field(description="The content of the response from the LLM")
-
-
 class GraphState(TypedDict):
-    messages: Annotated[list, add_messages]
-
-
-def _normalize_text_content(value) -> str:
-    """Convert LangChain message/content payloads into a plain string."""
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, list):
-        parts = []
-        for item in value:
-            text = _normalize_text_content(item)
-            if text:
-                parts.append(text)
-        return "\n".join(parts)
-    if isinstance(value, dict):
-        if "text" in value:
-            return _normalize_text_content(value["text"])
-        if "content" in value:
-            return _normalize_text_content(value["content"])
-        return str(value)
-    if hasattr(value, "text"):
-        return _normalize_text_content(getattr(value, "text"))
-    if hasattr(value, "content"):
-        return _normalize_text_content(getattr(value, "content"))
-    return str(value)
+    messages: Annotated[BaseMessage, add_messages]
 
 
 class Orchestrator:
     """Orchestrator that delegates to sub-agents to fulfill user requests."""
 
+    def bot(self, state: GraphState):
+        config = {"configurable": {"thread_id": "conversation-session-123"}}
+        # response = self.app.invoke(state["messages"], config=config)
+        # response = self.model.invoke(state["messages"], config=config)
+        response = self.llm_with_tools.invoke(state["messages"], config=config)
+        return {"messages": [response]}
+    
     def __init__(self):
-        system_prompt = (
-            "Categorize user requests as one of the following: "
-            "1. Weather related "
-            "2. Date or Time related "
-            "3. General "
-            "If the category is General, answer the question using the get_general_knowledge tool. "
-            "Otherwise, delegate to the appropriate sub-agent and return only the sub-agent's response. "
-            "Answer with short, to the point responses."
+        self.system_prompt = (
+            "Determine if a tool cal is required to respond to the query.  If so, call the tool." \
+            "If no tool call is required, form a general response to the query." \
+            "Always use the shortest response possible while answering the question directly."
         )
-       
+        self.tools = [get_datetime_tool, get_weather_tool]
+
         workflow = StateGraph(GraphState)
-        workflow.add_node("agent", self._call_model)
+        workflow.add_node("agent", self.bot)
+        workflow.add_node("tools", ToolNode(self.tools))
+        workflow.add_edge('tools', 'agent')
         workflow.add_edge(START, "agent")
         workflow.add_edge("agent", END)
+        workflow.add_conditional_edges("agent", self.should_continue)
 
         memory = MemorySaver()
         self.app = workflow.compile(checkpointer=memory)
@@ -84,19 +56,28 @@ class Orchestrator:
             model=Config.ORCHESTRATOR_MODEL, 
             api_key=Config.ANTHROPIC_API_KEY
         )
-        self.tools = [get_weather_subagent, get_datetime_subagent, get_general_knowledge]
+        self.llm_with_tools = self.model.bind_tools(self.tools)
 
+        # Create an image of the workflow graph for debugging
+        if Config.LOG_LEVEL == 'DEBUG':
+            png_data = self.app.get_graph().draw_mermaid_png()
+            with open("langgraph_graph.png", "wb") as f:
+                f.write(png_data)
 
-    def _call_model(self, state: GraphState):
-        response = self.model.invoke(state["messages"])
-        # print(f"response: {response}")
-        content = _normalize_text_content(response)
-        return {"messages": [AIMessage(content=content)]}
+    def should_continue(self, state):
+        messages = state["messages"]
+        last_message = messages[-1]
+        # If the LLM made a tool call, route to the tools node
+        if last_message.tool_calls:
+            return "tools"
+        return END
 
     def ask(self, query: str) -> str:
         config = {"configurable": {"thread_id": "conversation-session-123"}}
-        input_message = HumanMessage(content=query)
-        result = self.app.invoke({"messages": [input_message]}, config)
-        content = _normalize_text_content(result["messages"][-1])
-        return content
-        
+        user_input = {"messages": [
+            ("system", self.system_prompt), 
+            ("user", query)
+        ]}
+        final_state = self.app.invoke(user_input, config=config)
+        final_answer = final_state["messages"][-1]
+        return final_answer

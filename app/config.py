@@ -1,14 +1,16 @@
 """Application configuration."""
 import os
-from pathlib import Path
 
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
-    ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL", "claude-sonnet-5")
-    PORT = os.environ.get("PORT") or "5010"
-    FLASK_DEBUG = int(os.environ.get("FLASK_DEBUG", 0))
+    ORCHESTRATOR_MODEL = os.environ.get("ORCHESTRATOR_MODEL")
+    PORT = os.environ.get("PORT")
+    FLASK_DEBUG = int(os.environ.get("FLASK_DEBUG"))
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+
+    LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT").lower() == "true"
+    LOG_LEVEL = os.environ.get("LOG_LEVEL")
 
     LANGSMITH_API_KEY = os.environ.get("LANGSMITH_API_KEY")
     LANGSMITH_TRACING = os.environ.get("LANGSMITH_TRACING")
