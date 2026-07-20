@@ -15,8 +15,9 @@ except Exception:
 from typing import Annotated
 from typing_extensions import TypedDict
 
-from app.api.getdatetime import get_datetime_tool
-from app.api.getweather import get_weather_tool
+from app.tools.getdatetimetool import get_datetime_tool
+from app.tools.getweathertool import get_weather_tool
+from app.tools.websearchtool import web_search_tool
 from app.config import Config
 
 
@@ -40,7 +41,7 @@ class Orchestrator:
             "If no tool call is required, form a general response to the query." \
             "Always use the shortest response possible while answering the question directly."
         )
-        self.tools = [get_datetime_tool, get_weather_tool]
+        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool]
 
         workflow = StateGraph(GraphState)
         workflow.add_node("agent", self.bot)

@@ -3,7 +3,7 @@ from flask import Flask
 from flask_restful import Api
 import os
 import logging
-from logging.handlers import SMTPHandler, RotatingFileHandler
+from logging.handlers import RotatingFileHandler
 
 from app.config import Config
 

@@ -1,7 +1,7 @@
 from app import flask_api
-from flask_restful import Resource, Api, reqparse, inputs, request
-from flask import current_app, jsonify
-from app.api.orchestrator import Orchestrator
+from flask_restful import Resource, reqparse
+from flask import current_app
+from app.tools.orchestrator import Orchestrator
 
 agent_orchestrator = Orchestrator()
 
@@ -22,10 +22,6 @@ class Agent(Resource):
         current_app.logger.debug(f"/agent post args: {args}")
 
         r = agent_orchestrator.ask(query=query)
-        # try:
-        #     r = agent_orchestrator.ask(query=query)
-        # except Exception as e:
-        #     return "Error processing request", 500
         return r.content, 200
 
 
@@ -37,7 +33,7 @@ class HealthCheck(Resource):
     def get(self):
         current_app.logger.debug(f'/health get')
         try:
-            # todo - what to do for a test?
+            # TODO - what to do for a test?
             current_app.logger.info(f"/health get: 200")
             return'{"status": "ok"}', 200
         except Exception as e:
