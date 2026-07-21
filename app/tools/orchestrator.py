@@ -5,6 +5,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage
+from langchain_core.messages import SystemMessage, AIMessage
 
 # Robust import for ChatAnthropic across langchain versions / packages
 try:
@@ -32,7 +33,10 @@ class Orchestrator:
         config = {"configurable": {"thread_id": "conversation-session-123"}}
         # response = self.app.invoke(state["messages"], config=config)
         # response = self.model.invoke(state["messages"], config=config)
-        response = self.llm_with_tools.invoke(state["messages"], config=config)
+
+
+        messages = [SystemMessage(content=self.system_prompt)] + state["messages"]
+        response = self.llm_with_tools.invoke(messages, config=config)
         return {"messages": [response]}
     
     def __init__(self):
@@ -76,9 +80,7 @@ class Orchestrator:
     def ask(self, query: str) -> str:
         config = {"configurable": {"thread_id": "conversation-session-123"}}
         user_input = {"messages": [
-            ("system", self.system_prompt), 
             ("user", query)
         ]}
-        final_state = self.app.invoke(user_input, config=config)
-        final_answer = final_state["messages"][-1]
-        return final_answer
+        response = self.app.invoke(user_input, config=config)
+        return response["messages"][-1].text

@@ -1,6 +1,8 @@
 from langchain_core.tools import tool
 import json
-from urllib import parse, request
+# from urllib import parse, request
+import urllib.parse
+import urllib.request
 from pydantic import BaseModel, Field
 
 #-------------------------------------------------------------------

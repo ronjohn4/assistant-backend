@@ -22,7 +22,7 @@ class Agent(Resource):
         current_app.logger.debug(f"/agent post args: {args}")
 
         r = agent_orchestrator.ask(query=query)
-        return r.content, 200
+        return r, 200
 
 
 flask_api.add_resource(Agent, '/agent') #post

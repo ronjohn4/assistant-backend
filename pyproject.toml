@@ -217,7 +217,6 @@ dependencies = [
     "typing-inspection==0.4.2",
     "tzdata==2025.2",
     "uri-template==1.3.0",
-    "urllib3==2.6.2",
     "uuid-utils==0.12.0",
     "uv==0.9.17",
     "uvicorn==0.38.0",
