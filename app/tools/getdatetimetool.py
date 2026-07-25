@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from datetime import datetime
-
+from app import app
 
 #-------------------------------------------------------------------
 # get_datetime tool
@@ -14,7 +14,7 @@ class DatetimeResult(BaseModel):
     day_of_week: str = Field(description="Full day name (e.g. Monday)")
 
 
-@tool("get_datetime_subagent", description="Used to find date and time related information.")
+@tool("get_datetime_tool", description="Used to find date and time related information.")
 def get_datetime_tool() -> DatetimeResult:
     """Get the date and time. Use when the user asks about:
     - current time, what time it is, what's the time
@@ -22,6 +22,7 @@ def get_datetime_tool() -> DatetimeResult:
     - day of week, weekday, or similar time/date questions,
     - time zone, what time zone am I in, what is my time zone.
     Returns the date, time, timezone and day of week as structured JSON."""
+    app.logger.debug('get_datetime_tool()')
     now = datetime.now().astimezone()
     result = DatetimeResult(
         date=now.strftime("%Y-%m-%d"),
