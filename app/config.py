@@ -8,6 +8,9 @@ class Config:
     PORT = os.environ.get("PORT")
     FLASK_DEBUG = int(os.environ.get("FLASK_DEBUG"))
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+    API_BASE_URL = os.environ.get("API_BASE_URL")
 
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT").lower() == "true"
     LOG_LEVEL = os.environ.get("LOG_LEVEL")

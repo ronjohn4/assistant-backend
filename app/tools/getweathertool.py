@@ -4,7 +4,7 @@ import json
 import urllib.parse
 import urllib.request
 from pydantic import BaseModel, Field
-from app import app
+
 
 
 #-------------------------------------------------------------------
@@ -50,7 +50,7 @@ class WeatherResult(BaseModel):
 @tool("get_weather_tool", description="Used to find weather related information for the given location.")
 def get_weather_tool(city: str) -> WeatherResult:
     """Fetch real weather for a city using Open-Meteo (no API key)."""
-    app.logger.debug('get_weather_tool(): {city}')
+
     try:
         # Geocode city name to coordinates
         geocode_url = "https://geocoding-api.open-meteo.com/v1/search"

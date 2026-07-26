@@ -9,7 +9,7 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 from app.config import Config
-from app import app
+
 
 
 ACTIONTYPE_CODES = {
@@ -49,7 +49,7 @@ class MyDataInput(BaseModel):
 @tool("mydata_tool", args_schema=MyDataInput, description="Used to log actions like eating and exercise.")
 def mydata_tool(qty: str, action_type: str) -> MyDataResult:
     """Log personal actions like exercise and eating."""
-    app.logger.debug(f'mydata_tool(): {action_type}')
+
 
     actiontypeid = ACTIONTYPE_CODES.get(action_type, None)
 

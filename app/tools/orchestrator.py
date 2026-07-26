@@ -19,6 +19,9 @@ from typing_extensions import TypedDict
 from app.tools.getdatetimetool import get_datetime_tool
 from app.tools.getweathertool import get_weather_tool
 from app.tools.websearchtool import web_search_tool
+from app.tools.mydatatool import mydata_tool
+from app.tools.obsidiantool import search_obsidian_notes
+
 from app.config import Config
 
 
@@ -40,12 +43,13 @@ class Orchestrator:
         return {"messages": [response]}
     
     def __init__(self):
+
         self.system_prompt = (
             "Determine if a tool cal is required to respond to the query.  If so, call the tool." \
             "If no tool call is required, form a general response to the query." \
             "Always use the shortest response possible while answering the question directly."
         )
-        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool]
+        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes]
 
         workflow = StateGraph(GraphState)
         workflow.add_node("agent", self.bot)
@@ -64,10 +68,10 @@ class Orchestrator:
         self.llm_with_tools = self.model.bind_tools(self.tools)
 
         # Create an image of the workflow graph for debugging
-        if Config.LOG_LEVEL == 'DEBUG':
-            png_data = self.app.get_graph().draw_mermaid_png()
-            with open("langgraph_graph.png", "wb") as f:
-                f.write(png_data)
+        # if Config.LOG_LEVEL == 'DEBUG':
+        #     png_data = self.app.get_graph().draw_mermaid_png()
+        #     with open("langgraph_graph.png", "wb") as f:
+        #         f.write(png_data)
 
     def should_continue(self, state):
         messages = state["messages"]

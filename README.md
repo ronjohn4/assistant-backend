@@ -1,54 +1,79 @@
 # Agent Orchestrator
 
-This project provides a lightweight web-based chat interface for interacting with an orchestrator-style assistant. The app is designed to receive user messages, coordinate backend agent logic, and return responses through a simple Flask UI.
+This project provides a lightweight Flask backend for an orchestrator-style assistant. It accepts user queries, routes them through a LangGraph-based orchestration flow, and can call built-in tools such as date/time lookup, weather lookup, and web search.
 
 ## What this project does
 
-- Presents a chat experience in the browser through a Flask app.
-- Routes user requests to the orchestration layer and supporting tools.
-- Supports helper capabilities such as general knowledge, weather, and date/time lookups.
-- Serves the interface from the templates and static folders under the app package.
+- Exposes a small REST API for sending prompts to the orchestrator.
+- Routes requests through an LLM-backed agent workflow with tool support.
+- Includes helper capabilities for date/time, weather, and web search lookups.
+- Writes logs to stdout or a rotating log file under the logs directory.
 
 ## Project structure
 
-- app/ - Flask application package and route logic
-- app/api/ - API/tool modules used by the orchestrator
-- app/templates/ - HTML templates for the user interface
-- app/static/ - CSS and other frontend assets
-- main.py - entry point for running the application
+- app/ - Flask application package
+- app/api/ - API route definitions and blueprint registration
+- app/tools/ - orchestrator logic and tool implementations
+- main.py - application entry point
+- logs/ - runtime log output
+- pyproject.toml - project metadata and dependencies
 
-## How to set up the project
+## Prerequisites
 
-1. Make sure Python 3.11 or newer is installed.
-2. Create and activate a virtual environment:
+- Python 3.11 or newer
+- An Anthropic API key for the orchestrator model
+
+## Setup
+
+1. Create and activate a virtual environment:
    - Windows:
      - `python -m venv .venv`
      - `.venv\Scripts\activate`
-3. Install the project dependencies:
+2. Install the project dependencies:
    - `pip install -e .`
+3. Copy the sample environment file and update it:
+   - `copy .env_example .env`
+   - Fill in your API key and model settings
 
-## How to run the project
+## Configuration
 
-Start the app with:
+The app loads environment variables from a `.env` file. The main settings are:
+
+- `SECRET_KEY` - Flask secret key
+- `PORT` - HTTP port to listen on (defaults to `5002` if unset)
+- `FLASK_DEBUG` - set to `1` for debug mode
+- `ORCHESTRATOR_MODEL` - model name for the orchestrator
+- `ANTHROPIC_API_KEY` - Anthropic API credential
+- `LOG_TO_STDOUT` - write logs to stdout when set to `true`
+- `LOG_LEVEL` - logging level such as `DEBUG`, `INFO`, or `ERROR`
+
+Optional LangSmith tracing settings are also supported:
+
+- `LANGSMITH_API_KEY`
+- `LANGSMITH_TRACING`
+- `LANGSMITH_PROJECT`
+
+## Running the app
+
+Start the backend with:
 
 - `python main.py`
 
-By default, the app runs on port 5010. You can open it in your browser at:
+The app will listen on the configured port. If `PORT` is not set, it defaults to `5002`.
 
-- `http://localhost:5010`
+## API endpoints
 
-To run in debug mode, set:
+- `GET /health` - returns a simple health status payload
+- `POST /agent` - sends a prompt to the orchestrator
 
-- `set FLASK_DEBUG=1`
-- `python main.py`
+Example request:
 
-## How to manage the project
+```bash
+curl -X POST http://localhost:5002/agent -H "Content-Type: application/json" -d "{\"query\":\"What time is it?\"}"
+```
 
-- Update dependencies when needed by running `pip install -e .` again after changing project requirements.
-- If you add or modify Python modules, restart the Flask server so the latest code is loaded.
-- Keep environment variables in a `.env` file when needed; the app loads environment settings automatically.
-- For local development, it is helpful to review the logs in the terminal when troubleshooting issues.
+## Development notes
 
-## Notes
-
-This project is intentionally simple and focused on the interaction layer between the human user and the orchestrator agent.
+- Restart the Flask server after changing Python modules.
+- Review the logs in the terminal or the `logs/` directory when troubleshooting.
+- New tools can be added under `app/tools/` and wired into the orchestrator in `app/tools/orchestrator.py`.
