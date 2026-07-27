@@ -7,23 +7,19 @@ from langchain.agents import create_agent
 
 from pathlib import Path
 
-# --- Step 1: Pre-initialize the Retriever (Do this once, outside the tool) ---
-# This prevents reloading your entire vault on every single agent loop.
-# loader = ObsidianLoader("C:\\Users\\ronjo\\Documents\\Obsidian Vaults\\ron")
-
-# current_dir = Path(__file__).resolve().parent
-current_dir = Path.cwd()
-vault_path = current_dir / "data/vault"
-
-loader = ObsidianLoader(str(vault_path))
-documents = loader.load()
-
-text_splitter = MarkdownTextSplitter(chunk_size=1000, chunk_overlap=200)
-chunks = text_splitter.split_documents(documents)
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-vector_store = Chroma.from_documents(chunks, embeddings)
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+db_connection = Chroma(
+    persist_directory="../my_chroma_db", 
+    embedding_function=embeddings,
+    collection_name="RonObsidianVault"
+)
+
+retriever = db_connection.as_retriever(
+    search_type="similarity",   # Options: "similarity", "mmr", "similarity_score_threshold"
+    search_kwargs={"k": 3}  # Number of documents to fetch
+)
 
 
 # --- Step 2: Define the Custom Tool ---
