@@ -9,3 +9,4 @@ uploads/*
 *.log
 *.png
 data/*
+assistant_working_dir/*

@@ -21,6 +21,8 @@ from app.tools.getweathertool import get_weather_tool
 from app.tools.websearchtool import web_search_tool
 from app.tools.mydatatool import mydata_tool
 from app.tools.obsidiantool import search_obsidian_notes
+from app.tools.filemanagementtool import init_file_management_tools
+from app.tools.gmailtool import init_gmail_tools
 
 from app.config import Config
 
@@ -47,9 +49,14 @@ class Orchestrator:
         self.system_prompt = (
             "Determine if a tool cal is required to respond to the query.  If so, call the tool." \
             "If no tool call is required, form a general response to the query." \
-            "Always use the shortest response possible while answering the question directly."
+            "Always use the shortest response possible while answering the question directly." \
+            "The file management tools are for you to persist information you find interesting or helpful." \
+            "How you organize this file space is up to you." \
+            "You do NOT need to be prompted to save information to the file management tools.  You can save information you find interesting or helpful at any time." \
         )
-        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes]
+        fm_tools = init_file_management_tools() 
+        gmail_tools = init_gmail_tools()
+        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes] + fm_tools + gmail_tools
 
         workflow = StateGraph(GraphState)
         workflow.add_node("agent", self.bot)
