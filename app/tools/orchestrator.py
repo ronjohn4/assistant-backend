@@ -6,6 +6,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage
 from langchain_core.messages import SystemMessage, AIMessage
+from pathlib import Path
 
 # Robust import for ChatAnthropic across langchain versions / packages
 try:
@@ -22,7 +23,7 @@ from app.tools.websearchtool import web_search_tool
 from app.tools.mydatatool import mydata_tool
 from app.tools.obsidiantool import search_obsidian_notes
 from app.tools.filemanagementtool import init_file_management_tools
-from app.tools.gmailtool import init_gmail_tools
+# from app.tools.gmailtool import init_gmail_tools
 
 from app.config import Config
 
@@ -33,30 +34,15 @@ class GraphState(TypedDict):
 
 class Orchestrator:
     """Orchestrator that delegates to sub-agents to fulfill user requests."""
-
-    def bot(self, state: GraphState):
-        config = {"configurable": {"thread_id": "conversation-session-123"}}
-        # response = self.app.invoke(state["messages"], config=config)
-        # response = self.model.invoke(state["messages"], config=config)
-
-
-        messages = [SystemMessage(content=self.system_prompt)] + state["messages"]
-        response = self.llm_with_tools.invoke(messages, config=config)
-        return {"messages": [response]}
     
     def __init__(self):
+        prompt_path = Path("assistant_working_dir/orchestrator_prompt.txt")
+        self.system_prompt = prompt_path.read_text(encoding="utf-8")
 
-        self.system_prompt = (
-            "Determine if a tool cal is required to respond to the query.  If so, call the tool." \
-            "If no tool call is required, form a general response to the query." \
-            "Always use the shortest response possible while answering the question directly." \
-            "The file management tools are for you to persist information you find interesting or helpful." \
-            "How you organize this file space is up to you." \
-            "You do NOT need to be prompted to save information to the file management tools.  You can save information you find interesting or helpful at any time." \
-        )
         fm_tools = init_file_management_tools() 
-        gmail_tools = init_gmail_tools()
-        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes] + fm_tools + gmail_tools
+        # gmail_tools = init_gmail_tools()
+        # self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes] + fm_tools + gmail_tools
+        self.tools = [get_datetime_tool, get_weather_tool, web_search_tool, mydata_tool, search_obsidian_notes] + fm_tools
 
         workflow = StateGraph(GraphState)
         workflow.add_node("agent", self.bot)
@@ -80,6 +66,17 @@ class Orchestrator:
         #     with open("langgraph_graph.png", "wb") as f:
         #         f.write(png_data)
 
+    def bot(self, state: GraphState):
+        # reload system_prompt just in case it was updated
+        prompt_path = Path("assistant_working_dir/orchestrator_prompt.txt")
+        self.system_prompt = prompt_path.read_text(encoding="utf-8")
+        
+        # config is used when the same bot and graph is handling multiple conversations
+        config = {"configurable": {"thread_id": "conversation-session-123"}}
+        messages = [SystemMessage(content=self.system_prompt)] + state["messages"]
+        response = self.llm_with_tools.invoke(messages, config=config)
+        return {"messages": [response]}
+    
     def should_continue(self, state):
         messages = state["messages"]
         last_message = messages[-1]
