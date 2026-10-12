@@ -38,13 +38,13 @@ WEATHER_CODES = {
 
 class WeatherResult(BaseModel):
     """Structured result for date, time, timezone, day of week."""
-    city: str = Field(description="The normalized city name"),
-    lat: float = Field(description="latitude"),
-    lon: float = Field(description="longitude"),
-    temp: float = Field(description="temperature"),
-    unit: str = Field(description="unit of measure, F or C"),
-    humidity: int = Field(description="humidity"),
-    description: str = Field(description="weather description based of the weather code"),
+    city: str = Field(description="The normalized city name")
+    lat: float = Field(description="latitude")
+    lon: float = Field(description="longitude")
+    temp: float = Field(description="temperature")
+    unit: str = Field(description="unit of measure, F or C")
+    humidity: int = Field(description="humidity")
+    description: str = Field(description="weather description based of the weather code")
 
 
 @tool("get_weather_tool", description="Used to find weather related information for the given location.")
